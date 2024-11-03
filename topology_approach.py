@@ -1,12 +1,10 @@
 # Project files
-from collections.abc import Iterable
-
 import query as q
 import build_network as bn
 import cogsNet
 # Other imports
-import abc
 import pandas as pd
+import pytest
 import networkx as nx
 import numpy as np
 import combu  # MIT License Copyright (c) 2020 Takeru Saito
@@ -22,6 +20,9 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split  # Import train_test_split function
 from sklearn import metrics  # Import scikit-learn metrics module for accuracy calculation
+from sklearn.utils.tests.test_testing import ignore_warnings
+from sklearn.exceptions import ConvergenceWarning
+from scipy.linalg import LinAlgWarning
 from sklearn.tree import export_graphviz
 
 # NetSense has 6 questions about different worldview-related issues:
@@ -54,11 +55,11 @@ best_file_per_question = {
 # Number of the survey for which we are going to prepare a classifier system. Possible values are from 2 to 6.
 # Don't put 1 in here, because it's like asking 'what interactions did we have before the 1st semester?'
 # - answer is not that many...
-SURVEY_NUMBER = 3
+SURVEY_NUMBER = 6
 # This parameter is for deciding whether classifier should only take into the account
 # BehavioralAll data from the past 1 semester. If false, it will take all the data until
 # the time of survey from the SURVEY_NUMBER (line above).
-using_data_from_only_the_previous_semester = True
+using_data_from_only_the_previous_semester = False
 # parse CoDING results into a dataframe
 coding_results: dict[str, pd.DataFrame] = {}
 for question in questions:
@@ -84,7 +85,6 @@ except FileNotFoundError:
     df = q.run_query_return_df(query, allow_self_links=False)
     print(f"Data successfully loaded. Saving it to {file} file.")
     df.to_csv(file_path + file, index=False)
-
 # We're only taking into the account agents with IDs of length==5,
 # because others were outsiders who did not fill in the Surveys
 df = df[df.SenderID <= 99999]
@@ -92,12 +92,23 @@ df = df[df.SenderID >= 10000]
 df = df[df.ReceiverID <= 99999]
 df = df[df.ReceiverID >= 10000]
 
-# TODO: let's add some agents here who filled in the survey but are not present in the BehaviorallAll records
-
 # In this step a network is being built from the retrieved data.
 G: nx.classes.graph.Graph = bn.build_network(df, directed=False)
-bn.draw_graph_of_g(G, show=False)
 
+
+demographic_data_path = "../data/demographicData.csv"
+try:
+    print(f"Loading data from {demographic_data_path} file.")
+    demog_df = pd.read_csv(demographic_data_path)
+    print(f'File {demographic_data_path} read successfully')
+except FileNotFoundError:
+    print(f"File {demographic_data_path} not found. Going to run the database query instead..")
+    demog_df = q.get_demographic_df()
+    print(f"Data successfully loaded. Saving it to {file} file.")
+    demog_df.to_csv(demographic_data_path, index=False)
+
+G = bn.add_agents_to_network_from_df(G,demog_df)
+bn.draw_graph_of_g(G, show=True)
 # Getting values of CogsNet for the network
 print('Calculating CogsNet weights for the network..')
 # Cij - number of interactions between agents i & j
@@ -106,7 +117,7 @@ print('Calculating CogsNet weights for the network..')
 Cij, Tij, Wij, all_nodes, weights_adjacency_matrix = cogsNet.run_cogsnet(df)
 print('CogsNet weights calculated successfully.')
 # this foo creates and displays a heatmap adjacency plot
-bn.draw_adjacency_heatmap(weights_adjacency_matrix, show=False)
+bn.draw_adjacency_heatmap(weights_adjacency_matrix, show=True)
 
 # In this step we collect a number of topological features which are going to be used for the classifier
 features = ["Node degree", "Sum of CogsNet", "Avg Neighbour's CogsNetSum", "Avg Neighbour Degree", "Degree-centrality",
@@ -193,26 +204,30 @@ for question in questions:
 # This is the dictionary which lists all the tested Classifier models together with their parameters
 # and ranges on which they are going to be tested
 classifiers = {
-    DecisionTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
-                             "max_depth": range(1, 50), "max_features": ["sqrt", "log2", None],
-                             "min_samples_leaf": range(1, 10)},
-    RandomForestClassifier: {"n_estimators": range(2, 200), "criterion": ["gini", "entropy", "log_loss"],
-                             "max_depth": range(1, 50), "min_samples_leaf": range(1, 10),
-                             "max_features": ["sqrt", "log2", None], "bootstrap": [True, False]},
-    ExtraTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
-                          "max_depth": range(1, 50), "max_features": ["sqrt", "log2", None],
-                          "min_samples_leaf": range(1, 10)},
     LogisticRegression: {"penalty": ["l1", "l2", 'elasticnet', None], "tol": [0.01, 0.001, 0.0001, 0.00001],
                          "fit_intercept": [True, False], "class_weight": ['balanced', None],
                          "solver": ['lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga']},
+    DecisionTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
+                             "max_depth": [1, 25, 50], "max_features": ["sqrt", "log2", None],
+                             "min_samples_leaf": [1, 5, 10]},
+    RandomForestClassifier: {"n_estimators": [200], "criterion": ["gini", "entropy", "log_loss"],
+                             "max_depth": [1, 25, 50], "min_samples_leaf": [1, 5, 10],
+                             "max_features": ["sqrt", "log2", None], "bootstrap": [True, False]},
+    ExtraTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
+                          "max_depth": [50], "max_features": ["sqrt", "log2", None],
+                          "min_samples_leaf": [1, 5, 10]},
     GaussianNB: {},
-    KNeighborsClassifier: {"n_neighbors": range(1, 10), "weights": ["uniform", "distance"],
-                           "algorithm": ["auto", "ball_tree", "kd_tree", "brute"], "p": range(1, 5)}
+    KNeighborsClassifier: {"n_neighbors": [1, 5, 10, 15, 20], "weights": ["uniform", "distance"],
+                           "algorithm": ["auto", "ball_tree", "kd_tree", "brute"], "p": [1, 3, 5]}
 }
 Number_of_runs_per_experiment = 100
 
 
-def initialize_experiment_attributes(data, training_features, list_of_class_models, list_of_questions):
+# It's said to be a good practice to not include mutable objects as default parameters for the function,
+# so decided to do it this way, in this foo, so it doesn't add 10 lines to already long experiment foo.
+def initialize_attributes(data: dict[pd.DataFrame], training_features: list[str], list_of_class_models: dict,
+                          list_of_questions: list[str]) -> tuple[
+    dict[pd.DataFrame], list[str], dict, list[str]]:
     if data is None:
         data = dict_of_training_dfs
     if training_features is None:
@@ -224,26 +239,65 @@ def initialize_experiment_attributes(data, training_features, list_of_class_mode
     return data, training_features, list_of_class_models, list_of_questions
 
 
+# In case of the LogisticRegression model, there is a set of combinations of solver/penalty foo which
+# are not compatible. This foo checks for Combo combinations which contain such pairs and skips them.
+# For more information of which pairs are possible, please refer to the LogisticRegression's documentation:
+# https://scikit-learn.org/1.5/modules/generated/sklearn.linear_model.LogisticRegression.html
+def skip_illegal_penalty_solver_pairs(result, parameters: dict) -> bool:
+    if result.__class__ == LogisticRegression:
+        if ((parameters["solver"] == "lbfgs" or
+             parameters["solver"] == "newton-cg" or
+             parameters["solver"] == "newton-cholesky" or
+             parameters["solver"] == "sag")
+                and parameters["penalty"] not in ["l2", None]):
+            return True
+        if parameters["solver"] == "liblinear" and parameters["penalty"] not in ["l2", "l1"]:
+            return True
+        if parameters["solver"] == "saga" and parameters["penalty"] not in ["l1", "l2", "elasticnet", None]:
+            return True
+    if parameters.get("penalty", 0) == "elasticnet":
+        result.l1_ratio = 0.5
+    return False
+
+
+# Checks if the currently tested set of parameters does better than anything beforehand
+# and updates the values if it does.
+def check_if_acc_is_best_and_update_output(acc: float, best_accuracy: float, best_model, best_params: dict, result,
+                                           parameters: dict, survey_question: str) -> tuple:
+    if acc > best_accuracy:
+        best_accuracy = acc
+        best_model = result
+        best_params = parameters
+        print(f"For question: {survey_question}, best model was: {best_model} "
+              f"of parameters:{best_params}, with accuracy {best_accuracy}")
+    return best_model, best_params, best_accuracy
+
+
+@ignore_warnings(category=ConvergenceWarning)
+@ignore_warnings(category=LinAlgWarning)
 def experiment(list_of_questions: list[str] = None, data=None,
                list_of_class_models=None, n: int = Number_of_runs_per_experiment,
                training_features=None) -> pd.DataFrame:
     # Initialize the output dict
     results = {'question': [], 'model': [], 'params': [], "accuracy": []}
     # Initialize mutable parameters
-    data, training_features, list_of_class_models, list_of_questions = initialize_experiment_attributes(data,
-                                                                                                        training_features,
-                                                                                                        list_of_class_models,
-                                                                                                        list_of_questions)
+    data, training_features, list_of_class_models, list_of_questions = initialize_attributes(data, training_features,
+                                                                                             list_of_class_models,
+                                                                                             list_of_questions)
     # Iterate over all 6 questions
     for survey_question in list_of_questions:
         X = data[survey_question][training_features]
         Y = data[survey_question]['has_coding_predicted_the_label']
         X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=1)
         best_accuracy: float = 0.0
+        best_model, best_params = None, None
         for model, classifier_attributes in list_of_class_models.items():
             model_parametrizer = combu.Combu(model, progress=True)
             for result, parameters in model_parametrizer.execute(classifier_attributes):
                 acc = 0
+                if skip_illegal_penalty_solver_pairs(result, parameters):
+                    continue
+                # Getting the average accuracy of the model after N runs
                 for _ in range(n):
                     result = result.fit(X_train, y_train)
                     # Predict the response for test dataset
@@ -255,12 +309,11 @@ def experiment(list_of_questions: list[str] = None, data=None,
                 results['model'].append(model)
                 results['params'].append(parameters)
                 results['accuracy'].append(acc)
-                if acc > best_accuracy:
-                    best_accuracy = acc
-                    best_model = result
-                    best_params = parameters
-                    print(
-                        f"For question: {survey_question}, best model was: {best_model} of parameters:{best_params}, with accuracy {best_accuracy}")
+                # After testing model N (default 100) times, check if its accuracy is the best so far.
+                best_model, best_params, best_accuracy = check_if_acc_is_best_and_update_output(acc, best_accuracy,
+                                                                                                best_model, best_params,
+                                                                                                result, parameters,
+                                                                                                survey_question)
     results = pd.DataFrame.from_dict(results)
     return results
 

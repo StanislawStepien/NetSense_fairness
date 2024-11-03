@@ -29,3 +29,19 @@ def draw_adjacency_heatmap(adjacency_weights, show=True):
     sns.heatmap(adjacency_weights, annot=False, cmap=sns.color_palette("Spectral", as_cmap=True))
     if show:
         plt.show()
+
+
+def add_agents_to_network_from_df(G, demog_df):
+    n = 0
+    column_w_ids = list(demog_df.columns)[0]
+    for column in demog_df.columns:
+        if column in ["EgoID", "egoid", "egoID", "StudentID"]:
+            column_w_ids = column
+    df_ids = demog_df[column_w_ids].tolist()
+    list_of_network_nodes = list(G)
+    for id_number in df_ids:
+        if id_number not in list_of_network_nodes:
+            G.add_node(id_number)
+            n+=1
+    print(f"Added {n} agents to network")
+    return G

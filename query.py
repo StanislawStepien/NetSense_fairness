@@ -133,3 +133,13 @@ def construct_query_for_semester(SURVEY_NUMBER, using_data_from_only_the_previou
             WHERE ba.DateTime <= avg_survey_submission_date;
         """
     return query
+
+
+def get_demographic_df():
+    query = """SELECT * FROM `netsense-411221.NetSense.DemographicData` """
+    CREDS = 'netsense-411221-be346442c94a.json'
+    job_config = bigquery.LoadJobConfig(create_disposition=bigquery.CreateDisposition.CREATE_NEVER,
+                                        write_disposition=bigquery.WriteDisposition.WRITE_EMPTY)
+    client = bigquery.Client.from_service_account_json(json_credentials_path=CREDS)
+    df = client.query_and_wait(query).to_dataframe()
+    return df
