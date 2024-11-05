@@ -1,0 +1,8 @@
+
+wpython:S117"TRename this local variable "Cij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ΉΕά”ωÿÿÿÿ8‹°”Λθ1
+wpython:S117"TRename this local variable "Tij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ΉΕά”ωÿÿÿÿ8°”Λθ1
+wpython:S117"TRename this local variable "Wij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ΉΕά”ωÿÿÿÿ8°”Λθ1
+Qpython:S1481"-Replace unused local variable "Wij" with "_".(ΉΕά”ωÿÿÿÿ8…Ιÿΰ“2
+Qpython:S1481"-Replace unused local variable "Tij" with "_".(ΉΕά”ωÿÿÿÿ8”η§ϊ1
+Wpython:S1481"3Replace unused local variable "all_nodes" with "_".(ΉΕά”ωÿÿÿÿ8”η§ϊ1
+Qpython:S1481"-Replace unused local variable "Cij" with "_".(ΉΕά”ωÿÿÿÿ8λ°η§ϊ1

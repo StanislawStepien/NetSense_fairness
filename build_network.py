@@ -33,6 +33,7 @@ def draw_adjacency_heatmap(adjacency_weights, show=True):
 
 def add_agents_to_network_from_df(G, demog_df):
     n = 0
+    print("Adding agents from the Demographic Surveys who were not within the BehavioralAll records into the network..")
     column_w_ids = list(demog_df.columns)[0]
     for column in demog_df.columns:
         if column in ["EgoID", "egoid", "egoID", "StudentID"]:
@@ -43,5 +44,5 @@ def add_agents_to_network_from_df(G, demog_df):
         if id_number not in list_of_network_nodes:
             G.add_node(id_number)
             n+=1
-    print(f"Added {n} agents to network")
+    print(f"Added {n} agents to the network")
     return G

@@ -1,16 +1,14 @@
 # Project files
+import pickle
 import query as q
+import cogsNet as cN
 import build_network as bn
-import cogsNet
+import visualization as v
 # Other imports
 import pandas as pd
-import pytest
 import networkx as nx
 import numpy as np
 import combu  # MIT License Copyright (c) 2020 Takeru Saito
-from six import StringIO
-from IPython.display import Image
-import pydotplus
 # Sklearn
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier  # Import Decision Tree Classifier
@@ -23,7 +21,6 @@ from sklearn import metrics  # Import scikit-learn metrics module for accuracy c
 from sklearn.utils.tests.test_testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 from scipy.linalg import LinAlgWarning
-from sklearn.tree import export_graphviz
 
 # NetSense has 6 questions about different worldview-related issues:
 questions = ["euthanasia", "fssocsec", "fswelfare", "jobguar", "marijuana", "toomucheqrights"]
@@ -45,20 +42,21 @@ with acc: 0.5653669724770642
 """
 # Those are the files from CoDING that have the highest acc. for each of the consecutive questions.
 best_file_per_question = {
-    'euthanasia': '../CoDING_best_files/euthanasia-0.1-iter10.csv',
-    'fssocsec': '../CoDING_best_files/fssocsec-0.8-iter1.csv',
-    'fswelfare': '../CoDING_best_files/fswelfare-0.6-iter3.csv',
-    'jobguar': '../CoDING_best_files/jobguar-0.1-iter5.csv',
-    'marijuana': '../CoDING_best_files/marijuana-0.1-iter7.csv',
-    'toomucheqrights': '../CoDING_best_files/toomucheqrights-0.7-iter1.csv'
+    'euthanasia': '../original/CoDING_best_files/euthanasia-0.1-iter10.csv',
+    'fssocsec': '../original/CoDING_best_files/fssocsec-0.8-iter1.csv',
+    'fswelfare': '../original/CoDING_best_files/fswelfare-0.6-iter3.csv',
+    'jobguar': '../original/CoDING_best_files/jobguar-0.1-iter5.csv',
+    'marijuana': '../original/CoDING_best_files/marijuana-0.1-iter7.csv',
+    'toomucheqrights': '../original/CoDING_best_files/toomucheqrights-0.7-iter1.csv'
 }
 # Number of the survey for which we are going to prepare a classifier system. Possible values are from 2 to 6.
 # Don't put 1 in here, because it's like asking 'what interactions did we have before the 1st semester?'
 # - answer is not that many...
-SURVEY_NUMBER = 6
+SURVEY_NUMBER = 2
 # This parameter is for deciding whether classifier should only take into the account
 # BehavioralAll data from the past 1 semester. If false, it will take all the data until
 # the time of survey from the SURVEY_NUMBER (line above).
+# So simply put: if False then more data from BehavioralAll is considered
 using_data_from_only_the_previous_semester = False
 # parse CoDING results into a dataframe
 coding_results: dict[str, pd.DataFrame] = {}
@@ -73,7 +71,7 @@ for question in questions:
 
 # Getting the data from BehavioralAll table
 # which corresponds to the SURVEY_NUMBER & using_data_from_only_the_previous_semester parameters
-file_path = "../behaviorallAll/"
+file_path = "../original/behavioralAll/"
 file = f"BehavioralAll_S{SURVEY_NUMBER}_sinceStart_{min(str(not using_data_from_only_the_previous_semester))}.csv"
 try:
     print(f"Loading data from {file} file.")
@@ -94,9 +92,7 @@ df = df[df.ReceiverID >= 10000]
 
 # In this step a network is being built from the retrieved data.
 G: nx.classes.graph.Graph = bn.build_network(df, directed=False)
-
-
-demographic_data_path = "../data/demographicData.csv"
+demographic_data_path = "../original/data/demographicData.csv"
 try:
     print(f"Loading data from {demographic_data_path} file.")
     demog_df = pd.read_csv(demographic_data_path)
@@ -107,14 +103,15 @@ except FileNotFoundError:
     print(f"Data successfully loaded. Saving it to {file} file.")
     demog_df.to_csv(demographic_data_path, index=False)
 
-G = bn.add_agents_to_network_from_df(G,demog_df)
+G = bn.add_agents_to_network_from_df(G, demog_df)
+print("Generating an image")
 bn.draw_graph_of_g(G, show=True)
 # Getting values of CogsNet for the network
 print('Calculating CogsNet weights for the network..')
 # Cij - number of interactions between agents i & j
 # Tij - time of the last interaction between agents i & j
 # Wij - CogsNet's weight for the link between agents i & j - numpy ndarray
-Cij, Tij, Wij, all_nodes, weights_adjacency_matrix = cogsNet.run_cogsnet(df)
+Cij, Tij, Wij, all_nodes, weights_adjacency_matrix = cN.run_cogsnet(df)
 print('CogsNet weights calculated successfully.')
 # this foo creates and displays a heatmap adjacency plot
 bn.draw_adjacency_heatmap(weights_adjacency_matrix, show=True)
@@ -220,7 +217,7 @@ classifiers = {
     KNeighborsClassifier: {"n_neighbors": [1, 5, 10, 15, 20], "weights": ["uniform", "distance"],
                            "algorithm": ["auto", "ball_tree", "kd_tree", "brute"], "p": [1, 3, 5]}
 }
-Number_of_runs_per_experiment = 100
+Number_of_runs_per_experiment = 3
 
 
 # It's said to be a good practice to not include mutable objects as default parameters for the function,
@@ -243,7 +240,9 @@ def initialize_attributes(data: dict[pd.DataFrame], training_features: list[str]
 # are not compatible. This foo checks for Combo combinations which contain such pairs and skips them.
 # For more information of which pairs are possible, please refer to the LogisticRegression's documentation:
 # https://scikit-learn.org/1.5/modules/generated/sklearn.linear_model.LogisticRegression.html
-def skip_illegal_penalty_solver_pairs(result, parameters: dict) -> bool:
+def skip_illegal_penalty_solver_pairs(
+        result: DecisionTreeClassifier or ExtraTreeClassifier or RandomForestClassifier or LogisticRegression or GaussianNB or KNeighborsClassifier,
+        parameters: dict) -> bool:
     if result.__class__ == LogisticRegression:
         if ((parameters["solver"] == "lbfgs" or
              parameters["solver"] == "newton-cg" or
@@ -262,62 +261,135 @@ def skip_illegal_penalty_solver_pairs(result, parameters: dict) -> bool:
 
 # Checks if the currently tested set of parameters does better than anything beforehand
 # and updates the values if it does.
-def check_if_acc_is_best_and_update_output(acc: float, best_accuracy: float, best_model, best_params: dict, result,
-                                           parameters: dict, survey_question: str) -> tuple:
+def check_if_acc_is_best_and_update_output(acc: float, f1_score: float, best_accuracy: float, best_f1_score: float,
+                                           best_model: DecisionTreeClassifier or ExtraTreeClassifier or RandomForestClassifier or LogisticRegression or GaussianNB or KNeighborsClassifier,
+                                           best_params: dict, result, parameters: dict,
+                                           survey_question: str) -> tuple:
     if acc > best_accuracy:
         best_accuracy = acc
-        best_model = result
-        best_params = parameters
+    if f1_score >= best_f1_score:
+        # if curr f1 score is identical as the previous one, but has greater acc, then it will be taken as the new best.
+        if f1_score == best_f1_score and acc == best_accuracy:
+            best_f1_score = f1_score
+            best_model = result
+            best_params = parameters
+        else:
+            best_f1_score = f1_score
+            best_accuracy = acc
+            best_model = result
+            best_params = parameters
         print(f"For question: {survey_question}, best model was: {best_model} "
-              f"of parameters:{best_params}, with accuracy {best_accuracy}")
-    return best_model, best_params, best_accuracy
+              f"of parameters:{best_params}, with accuracy {best_accuracy} and f1 score {best_f1_score}")
+    return best_model, best_params, best_accuracy, best_f1_score
+
+
+# Foo for saving pickles of the best models from the experiment
+def pickle_the_best_model(
+        best_model: DecisionTreeClassifier or ExtraTreeClassifier or RandomForestClassifier or LogisticRegression or GaussianNB or KNeighborsClassifier,
+        experiment_question: str) -> str:
+    with open(
+            f"../original/best_models/best_model_{experiment_question}"
+            f"_S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.pkl",
+            'wb') as filename:
+        # noinspection PyTypeChecker
+        pickle.dump(best_model, filename)
+    return f"best_model_{experiment_question}S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.pkl"
+
+
+# Visualize the best models for each of the questions
+def get_img_filename(filename: str) -> str:
+    # initializing substrings
+    sub1 = "best_model_"
+    sub2 = "_S"
+    # getting index of substrings
+    idx1 = filename.index(sub1)
+    idx2 = filename.index(sub2)
+    curr_question = ''
+    # getting elements in between
+    for idx in range(idx1 + len(sub1) + 1, idx2):
+        curr_question = curr_question + filename[idx]
+    return f"Best_model_image_{curr_question}_S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.png"
+
+
+def visualize_output(pickled_name, X_train, y_train) -> None:
+    read_directory = "../original/best_models/"
+    save_directory = "../original/images_best_models/"
+    img_filename = get_img_filename(pickled_name)
+    model = pickle.load(open(read_directory + pickled_name, 'rb'))
+    v.visualize_model(model, save_directory, img_filename, features, X_train, y_train)
+
+
+# Experiment saves the best classifier models as pickles and
+# returns a pd.Dataframe with results for all tested algorithms/parameters together with their accuracy.
+def repeat_fitting_n_times_get_acc_and_f1(n: int, acc: float, f1_score: float, X_train: pd.DataFrame,
+                                          X_test: pd.DataFrame, y_train: pd.DataFrame, y_test: pd.DataFrame,
+                                          result: DecisionTreeClassifier or ExtraTreeClassifier or RandomForestClassifier or LogisticRegression or GaussianNB or KNeighborsClassifier):
+    for _ in range(n):
+        result = result.fit(X_train, y_train)
+        # Predict the response for test dataset
+        y_pred = result.predict(X_test)
+        # Model Accuracy, how often is the classifier correct?
+        acc += metrics.accuracy_score(y_test, y_pred)
+        f1_score += metrics.f1_score(y_test, y_pred)
+    acc /= n
+    f1_score /= n
+    return acc, f1_score
 
 
 @ignore_warnings(category=ConvergenceWarning)
 @ignore_warnings(category=LinAlgWarning)
 def experiment(list_of_questions: list[str] = None, data=None,
                list_of_class_models=None, n: int = Number_of_runs_per_experiment,
-               training_features=None) -> pd.DataFrame:
+               training_features=None, generate_best_models_visualizations: bool = False) -> pd.DataFrame:
     # Initialize the output dict
-    results = {'question': [], 'model': [], 'params': [], "accuracy": []}
+    results = {'question': [], 'model': [], 'params': [], "accuracy": [], "f1_score": []}
     # Initialize mutable parameters
     data, training_features, list_of_class_models, list_of_questions = initialize_attributes(data, training_features,
                                                                                              list_of_class_models,
                                                                                              list_of_questions)
     # Iterate over all 6 questions
     for survey_question in list_of_questions:
+        # noinspection PyTypeChecker
         X = data[survey_question][training_features]
+        # noinspection PyTypeChecker
         Y = data[survey_question]['has_coding_predicted_the_label']
         X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.3, random_state=1)
         best_accuracy: float = 0.0
+        best_f1_score: float = 0.0
         best_model, best_params = None, None
         for model, classifier_attributes in list_of_class_models.items():
             model_parametrizer = combu.Combu(model, progress=True)
             for result, parameters in model_parametrizer.execute(classifier_attributes):
                 acc = 0
+                f1_score = 0
                 if skip_illegal_penalty_solver_pairs(result, parameters):
                     continue
                 # Getting the average accuracy of the model after N runs
-                for _ in range(n):
-                    result = result.fit(X_train, y_train)
-                    # Predict the response for test dataset
-                    y_pred = result.predict(X_test)
-                    # Model Accuracy, how often is the classifier correct?
-                    acc += metrics.accuracy_score(y_test, y_pred)
-                acc /= n
+                acc, f1_score = repeat_fitting_n_times_get_acc_and_f1(n, acc, f1_score, X_train, X_test, y_train,
+                                                                      y_test, result)
                 results['question'].append(survey_question)
                 results['model'].append(model)
                 results['params'].append(parameters)
                 results['accuracy'].append(acc)
+                results['f1_score'].append(f1_score)
                 # After testing model N (default 100) times, check if its accuracy is the best so far.
-                best_model, best_params, best_accuracy = check_if_acc_is_best_and_update_output(acc, best_accuracy,
-                                                                                                best_model, best_params,
-                                                                                                result, parameters,
-                                                                                                survey_question)
+                (best_model, best_params,
+                 best_accuracy, best_f1_score) = check_if_acc_is_best_and_update_output(acc, f1_score, best_accuracy,
+                                                                                        best_f1_score, best_model,
+                                                                                        best_params, result, parameters,
+                                                                                        survey_question)
+        pickle_name = pickle_the_best_model(best_model, survey_question)
+        if generate_best_models_visualizations:
+            visualize_output(pickle_name, X_train, y_train)
     results = pd.DataFrame.from_dict(results)
     return results
 
 
 experiment_out_df = experiment(list_of_questions=questions, data=dict_of_training_dfs, n=Number_of_runs_per_experiment,
-                               training_features=features, list_of_class_models=classifiers)
-experiment_out_df.to_csv("experiment_out.csv", index=False)
+                               training_features=features, list_of_class_models=classifiers,
+                               generate_best_models_visualizations=True)
+# Save results of the experiment into a .csv file. Names will vary depending on whether program run included
+# all BehavioralAll records until the SURVEY_NUMBER date or relayed solely on the specified semester's records.
+experiment_out_df.to_csv(
+    f"../original/experiment_results/experiment_out_S{SURVEY_NUMBER}_ALL{str(not using_data_from_only_the_previous_semester)}.csv",
+    index=False)

@@ -1,0 +1,13 @@
+
+wpython:S117"TRename this local variable "Cij" to match the regular expression ^[_a-z][a-z0-9_]*$.(éÃç¸üÿÿÿÿ8Ýí¸à“2
+qpython:S117"TRename this local variable "Tij" to match the regular expression ^[_a-z][a-z0-9_]*$.(¿È×l8Ýí¸à“2
+rpython:S117"TRename this local variable "Wij" to match the regular expression ^[_a-z][a-z0-9_]*$.(Ö‚öï8Ýí¸à“2
+rpython:S117"ORename this parameter "Cij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ˆàßÝÿÿÿÿÿ8Ýí¸à“2
+rpython:S117"ORename this parameter "Tij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ˆàßÝÿÿÿÿÿ8Ýí¸à“2
+rpython:S117"ORename this parameter "Wij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ˆàßÝÿÿÿÿÿ8Ýí¸à“2
+mpython:S1170"ORename this parameter "Cij" to match the regular expression ^[_a-z][a-z0-9_]*$.(‡¨˜Ñ8Ýí¸à“2
+mpython:S1170"ORename this parameter "Tij" to match the regular expression ^[_a-z][a-z0-9_]*$.(‡¨˜Ñ8Ýí¸à“2
+mpython:S1170"ORename this parameter "Wij" to match the regular expression ^[_a-z][a-z0-9_]*$.(‡¨˜Ñ8Ýí¸à“2
+wpython:S117<"TRename this local variable "Cij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ºÛ™šûÿÿÿÿ8Ýí¸à“2
+wpython:S117<"TRename this local variable "Tij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ºÛ™šûÿÿÿÿ8Ýí¸à“2
+wpython:S117<"TRename this local variable "Wij" to match the regular expression ^[_a-z][a-z0-9_]*$.(ºÛ™šûÿÿÿÿ8Ýí¸à“2
