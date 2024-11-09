@@ -25,40 +25,37 @@ def visualize_tree(model: DecisionTreeClassifier or ExtraTreeClassifier, feature
 def visualize_random_forest(model: RandomForestClassifier, features: list[str], save_directory: str, img_filename: str):
     fn = features
     cn = model.classes_
+    cn = [str(x) for x in cn]
     fig, axes = plt.subplots(nrows=1, ncols=5, figsize=(10, 2), dpi=900)
-    for index in range(len(model.estimators_)):
-        plot_tree(model.estimators_[index],
-                  feature_names=fn,
-                  class_names=cn,
-                  filled=True,
-                  ax=axes[index])
+    for index in range(5):
+        plot_tree(model.estimators_[index],feature_names=fn, class_names=cn,filled=True,ax=axes[index])
         axes[index].set_title('Estimator: ' + str(index), fontsize=11)
     fig.savefig(save_directory + img_filename)
+    print("image with model visualization created at:"+save_directory+img_filename)
 
 
 def visualize_logistic_regression(model, features: list[str], save_directory: str, filename: str,
-                                  x_train: pd.DataFrame, y_train: pd.DataFrame) -> None:
+                                  x_train: pd.DataFrame, y_train: pd.DataFrame, question) -> None:
     model_fi = permutation_importance(model, x_train, y_train, random_state=1)
     out = f"Importance of features for {str(model.__class__)}:\n"
     for index, feature in enumerate(features):
         out += f"{feature}: {model_fi['importances_mean'][index]}\n"
-    if os.path.exists(save_directory + filename):
-        with open(save_directory + filename, 'w') as file:
+    save_path = save_directory + "Text_"+"Best_model_"+question+".txt"
+    with open(save_path, 'w') as file:
             file.write(out)
-    else:
-        with open(save_directory + filename, 'x') as file:
-            file.write(out)
+    print("\n","#"*20,"file with output model created at: ", save_path)
+
 
 
 def visualize_model(
         model: DecisionTreeClassifier or ExtraTreeClassifier or RandomForestClassifier or LogisticRegression or GaussianNB or KNeighborsClassifier,
         save_directory: str, img_filename: str, features: list[str], x_train: pd.DataFrame,
-        y_train: pd.DataFrame) -> None:
+        y_train: pd.DataFrame, question:str) -> None:
     if model.__class__ in [DecisionTreeClassifier, ExtraTreeClassifier]:
         visualize_tree(model, features, save_directory, img_filename)
     elif model.__class__ == RandomForestClassifier:
         visualize_random_forest(model, features, save_directory, img_filename)
-    elif model.__class__ == [LogisticRegression, GaussianNB]:
-        visualize_logistic_regression(model, features, save_directory, img_filename, x_train, y_train)
-    elif model.__class__ == GaussianNB:
-        print(model)
+    elif model.__class__ == [LogisticRegression, GaussianNB, KNeighborsClassifier]:
+        visualize_logistic_regression(model, features, save_directory, img_filename, x_train, y_train, question)
+    #elif model.__class__ == GaussianNB:
+     #   print(model)

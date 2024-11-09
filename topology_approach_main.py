@@ -57,7 +57,8 @@ SURVEY_NUMBER = 2
 # BehavioralAll data from the past 1 semester. If false, it will take all the data until
 # the time of survey from the SURVEY_NUMBER (line above).
 # So simply put: if False then more data from BehavioralAll is considered
-using_data_from_only_the_previous_semester = False
+using_data_from_only_the_previous_semester = True
+Number_of_runs_per_experiment = 2
 # parse CoDING results into a dataframe
 coding_results: dict[str, pd.DataFrame] = {}
 for question in questions:
@@ -207,17 +208,16 @@ classifiers = {
     DecisionTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
                              "max_depth": [1, 25, 50], "max_features": ["sqrt", "log2", None],
                              "min_samples_leaf": [1, 5, 10]},
-    RandomForestClassifier: {"n_estimators": [200], "criterion": ["gini", "entropy", "log_loss"],
+    RandomForestClassifier: {"n_estimators": [5], "criterion": ["gini", "entropy", "log_loss"],
                              "max_depth": [1, 25, 50], "min_samples_leaf": [1, 5, 10],
                              "max_features": ["sqrt", "log2", None], "bootstrap": [True, False]},
     ExtraTreeClassifier: {"criterion": ["gini", "entropy", "log_loss"], "splitter": ["best", "random"],
-                          "max_depth": [50], "max_features": ["sqrt", "log2", None],
+                          "max_depth": [10], "max_features": ["sqrt", "log2", None],
                           "min_samples_leaf": [1, 5, 10]},
     GaussianNB: {},
     KNeighborsClassifier: {"n_neighbors": [1, 5, 10, 15, 20], "weights": ["uniform", "distance"],
                            "algorithm": ["auto", "ball_tree", "kd_tree", "brute"], "p": [1, 3, 5]}
 }
-Number_of_runs_per_experiment = 3
 
 
 # It's said to be a good practice to not include mutable objects as default parameters for the function,
@@ -278,7 +278,7 @@ def check_if_acc_is_best_and_update_output(acc: float, f1_score: float, best_acc
             best_accuracy = acc
             best_model = result
             best_params = parameters
-        print(f"For question: {survey_question}, best model was: {best_model} "
+        print(f"\nFor question: {survey_question}, best model was: {best_model} "
               f"of parameters:{best_params}, with accuracy {best_accuracy} and f1 score {best_f1_score}")
     return best_model, best_params, best_accuracy, best_f1_score
 
@@ -293,7 +293,7 @@ def pickle_the_best_model(
             'wb') as filename:
         # noinspection PyTypeChecker
         pickle.dump(best_model, filename)
-    return f"best_model_{experiment_question}S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.pkl"
+    return f"best_model_{experiment_question}_S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.pkl"
 
 
 # Visualize the best models for each of the questions
@@ -306,17 +306,17 @@ def get_img_filename(filename: str) -> str:
     idx2 = filename.index(sub2)
     curr_question = ''
     # getting elements in between
-    for idx in range(idx1 + len(sub1) + 1, idx2):
+    for idx in range(idx1 + len(sub1) , idx2):
         curr_question = curr_question + filename[idx]
     return f"Best_model_image_{curr_question}_S{SURVEY_NUMBER}_All{str(not using_data_from_only_the_previous_semester)}.png"
 
 
-def visualize_output(pickled_name, X_train, y_train) -> None:
+def visualize_output(pickled_name, X_train, y_train,question) -> None:
     read_directory = "../original/best_models/"
     save_directory = "../original/images_best_models/"
     img_filename = get_img_filename(pickled_name)
     model = pickle.load(open(read_directory + pickled_name, 'rb'))
-    v.visualize_model(model, save_directory, img_filename, features, X_train, y_train)
+    v.visualize_model(model, save_directory, img_filename, features, X_train, y_train,question)
 
 
 # Experiment saves the best classifier models as pickles and
@@ -380,7 +380,7 @@ def experiment(list_of_questions: list[str] = None, data=None,
                                                                                         survey_question)
         pickle_name = pickle_the_best_model(best_model, survey_question)
         if generate_best_models_visualizations:
-            visualize_output(pickle_name, X_train, y_train)
+            visualize_output(pickle_name, X_train, y_train,survey_question)
     results = pd.DataFrame.from_dict(results)
     return results
 
