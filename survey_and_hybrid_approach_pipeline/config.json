@@ -1,0 +1,33 @@
+{
+  "base_dir": ".",
+  "demog_features_path": "survey_and_hybrid_approach_pipeline/all_features_plus_neighbours.csv",
+  "pure_demog_path": "survey_and_hybrid_approach_pipeline/pure_demographical_data.csv",
+  "topology_features_path": "netsense/topology_based_features.csv",
+  "simulation_results_dir": "simulation_result_per_topic/best_sim_result",
+  "minorities_pickle_path": "survey_and_hybrid_approach_pipeline/dictionary_of_dfs_with_minorities.pkl",
+  "models_output_dir": "survey_and_hybrid_approach_pipeline/models",
+  "evaluation_output_dir": "survey_and_hybrid_approach_pipeline/evaluation_results",
+  "artifacts_output_dir": "survey_and_hybrid_approach_pipeline/artifacts",
+  "topics": [
+    "euthanasia",
+    "fssocsec",
+    "fswelfare",
+    "jobguar",
+    "marijuana",
+    "toomucheqrights"
+  ],
+  "test_size": 0.2,
+  "random_seed": 42,
+  "bayes_search_iterations": 30,
+  "cv_splits": 10,
+  "top_feature_counts": [
+    15,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    85
+  ]
+}
