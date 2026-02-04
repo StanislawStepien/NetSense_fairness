@@ -1,0 +1,8 @@
+{
+  "base_dir": ".",
+  "survey_raw_path": "netsense/demsurveyMergedCodedDisID.csv",
+  "network_survey_path": "netsense/netsurveysMergedWideCodedWithDates.csv",
+  "topology_features_path": "netsense/topology_based_features.csv",
+  "all_features_output_path": "survey_and_hybrid_approach_pipeline/all_features_plus_neighbours.csv",
+  "pure_demog_output_path": "survey_and_hybrid_approach_pipeline/pure_demographical_data.csv"
+}
