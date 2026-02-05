@@ -127,7 +127,10 @@ def load_feature_tables(config: PipelineConfig) -> pd.DataFrame:
         existing = [c for c in cols_to_drop if c in topo_df.columns]
         if existing:
             topo_df = topo_df.drop(columns=existing)
-        demog_and_pure = demog_and_pure.merge(topo_df, how="left", on=identifier_cols)
+        topo_feature_cols = [c for c in topo_df.columns if c not in identifier_cols]
+        already_present = [c for c in topo_feature_cols if c in demog_and_pure.columns]
+        if not already_present:
+            demog_and_pure = demog_and_pure.merge(topo_df, how="left", on=identifier_cols)
 
     columns_to_drop = [
         "abortion",
@@ -250,7 +253,7 @@ def build_topic_dataset(
     train = pd.concat([minority_train, non_minority_train])
     test = pd.concat([minority_test, non_minority_test])
 
-    columns_to_drop = ["OpinionSim", "OpinionSurvey", "egoid", "SurveyNr"]
+    columns_to_drop = ["OpinionSim", "OpinionSurvey", "egoid", "SurveyNr", "Y"]
     X_train = train.drop(columns=[c for c in columns_to_drop if c in train.columns])
     X_test = test.drop(columns=[c for c in columns_to_drop if c in test.columns])
     y_train = train["Y"].astype(int)
@@ -270,7 +273,7 @@ def evaluate_on_minorities(
     minorities: Dict[str, pd.DataFrame],
 ) -> pd.DataFrame:
     results = []
-    clean_features = [f for f in features if f != "egoid"]
+    clean_features = [f for f in features if f not in ("egoid", "Y") and f in X.columns]
 
     for category, df in minorities.items():
         if "egoid" not in df.columns:
