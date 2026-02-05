@@ -372,7 +372,13 @@ def merge_all_features(config: FeatureEngineeringConfig, survey_features_path: P
     if "EgoID" in topo_df.columns and "egoid" not in topo_df.columns:
         topo_df = topo_df.rename(columns={"EgoID": "egoid"})
 
-    merged_df = demog_df.merge(topo_df, on=["egoid", "SurveyNr"], how="left")
+    identifier_cols = ["egoid", "SurveyNr"]
+    topo_feature_cols = [c for c in topo_df.columns if c not in identifier_cols]
+    already_present = [c for c in topo_feature_cols if c in demog_df.columns]
+    if already_present:
+        merged_df = demog_df.copy()
+    else:
+        merged_df = demog_df.merge(topo_df, on=identifier_cols, how="left")
     merged_df = merged_df.dropna()
     merged_df.to_csv(config.all_features_output_path, index=False)
     return merged_df
