@@ -25,8 +25,6 @@
 - parentsmarriage: mean=1.8535, std=0.3943, min=0.0000, p25=2.0000, median=2.0000, p75=2.0000, max=3.0000
 - pincome: mean=0.4848, std=0.7370, min=0.0000, p25=0.0000, median=0.0000, p75=1.0000, max=4.0000
 - weight: mean=1.0455, std=1.0796, min=0.0000, p25=0.0000, median=1.0000, p75=2.0000, max=3.0000
-- SurveyNr: mean=3.5000, std=1.7085, min=1.0000, p25=2.0000, median=3.5000, p75=5.0000, max=6.0000
-- egoid: mean=51158.6869, std=24485.2160, min=10060.0000, p25=30076.0000, median=50908.0000, p75=71700.0000, max=99338.0000
 
 ### Top Correlations (absolute)
 - dadrelig ↔ momrelig: 0.6760
@@ -50,8 +48,6 @@
 - Missing data: none
 
 ### Numeric Summary
-- EgoID: mean=142548.9553, std=39555.6607, min=10060.0000, p25=118996.0000, median=146154.0000, p75=173551.0000, max=199995.0000
-- SurveyNr: mean=3.0870, std=1.6431, min=1.0000, p25=2.0000, median=3.0000, p75=4.0000, max=6.0000
 - Degree Centrality: mean=0.0009, std=0.0018, min=0.0003, p25=0.0003, median=0.0004, p75=0.0007, max=0.0170
 - Closeness Centrality: mean=0.0259, std=0.0326, min=0.0003, p25=0.0032, median=0.0056, p75=0.0607, max=0.1227
 - Betweenness Centrality: mean=0.0009, std=0.0057, min=0.0000, p25=0.0000, median=0.0000, p75=0.0000, max=0.1543
@@ -59,19 +55,18 @@
 - Community: mean=38.0803, std=37.7695, min=0.0000, p25=8.0000, median=25.0000, p75=57.0000, max=157.0000
 
 ### Top Correlations (absolute)
-- EgoID ↔ Degree Centrality: 0.5813
 - Degree Centrality ↔ Betweenness Centrality: 0.5089
 - Closeness Centrality ↔ Community: 0.5071
 - Closeness Centrality ↔ Betweenness Centrality: 0.2840
-- EgoID ↔ Betweenness Centrality: 0.2373
 - Degree Centrality ↔ Eigenvector Centrality: 0.2371
 - Betweenness Centrality ↔ Eigenvector Centrality: 0.2106
 - Closeness Centrality ↔ Eigenvector Centrality: 0.1796
-- SurveyNr ↔ Community: 0.1782
 - Degree Centrality ↔ Closeness Centrality: 0.1579
+- Eigenvector Centrality ↔ Community: 0.1523
+- Betweenness Centrality ↔ Community: 0.1112
+- Degree Centrality ↔ Community: 0.1042
 
 ### Outlier Counts (IQR)
-- EgoID: 351
 - Degree Centrality: 1141
 - Eigenvector Centrality: 2851
 - Community: 435
@@ -82,8 +77,6 @@
 - Missing data: none
 
 ### Numeric Summary
-- egoid: mean=49771.7713, std=23172.7568, min=10060.0000, p25=30076.0000, median=50181.0000, p75=70889.0000, max=89827.0000
-- SurveyNr: mean=3.7767, std=1.3587, min=2.0000, p25=3.0000, median=4.0000, p75=5.0000, max=6.0000
 - Discussed_Politics: mean=12.4094, std=4.4479, min=0.0000, p25=8.0000, median=12.0000, p75=16.0000, max=20.0000
 - Discussed_Religion: mean=19.0652, std=8.9597, min=0.0000, p25=17.0000, median=17.0000, p75=26.0000, max=34.0000
 - Performed_Volunteer_Work: mean=9.4249, std=4.7215, min=0.0000, p25=4.0000, median=8.0000, p75=12.0000, max=20.0000
@@ -167,13 +160,13 @@
 - Eigenvector Centrality_Survey ↔ Eigenvector Centrality: 1.0000
 - Eigenvector Centrality_Survey ↔ Eigenvector Centrality_y: 1.0000
 - Eigenvector Centrality_Survey ↔ Eigenvector Centrality_x: 1.0000
-- Closeness Centrality_Survey ↔ Closeness Centrality_x: 1.0000
-- Betweenness Centrality_Survey ↔ Betweenness Centrality: 1.0000
+- Closeness Centrality_x ↔ Closeness Centrality: 1.0000
 - Degree Centrality_x ↔ Degree Centrality: 1.0000
-- Community_y ↔ Community: 1.0000
-- Degree Centrality_x ↔ Degree Centrality_y: 1.0000
-- Eigenvector Centrality_y ↔ Eigenvector Centrality: 1.0000
-- Betweenness Centrality_x ↔ Betweenness Centrality_y: 1.0000
+- Community_x ↔ Community_y: 1.0000
+- Eigenvector Centrality_x ↔ Eigenvector Centrality_y: 1.0000
+- Degree Centrality_Survey ↔ Degree Centrality_y: 1.0000
+- Betweenness Centrality_y ↔ Betweenness Centrality: 1.0000
+- Community_x ↔ Community: 1.0000
 
 ### Outlier Counts (IQR)
 - Discussed_Religion: 324

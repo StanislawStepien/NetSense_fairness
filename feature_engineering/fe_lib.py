@@ -395,6 +395,8 @@ def write_feature_engineering_report(
     lines.append("# Feature Engineering Report")
     lines.append("")
 
+    identifier_cols = {"egoid", "EgoID", "SurveyNr"}
+
     def add_section(title: str, df: pd.DataFrame) -> None:
         lines.append(f"## {title}")
         lines.append(f"- Rows: {len(df)}")
@@ -409,7 +411,10 @@ def write_feature_engineering_report(
                 lines.append(f"- {col}: {pct:.2f}%")
         lines.append("")
 
-        numeric_df = df.select_dtypes(include=[np.number])
+        numeric_df = df.select_dtypes(include=[np.number]).drop(
+            columns=[c for c in df.columns if c in identifier_cols],
+            errors="ignore",
+        )
         if not numeric_df.empty:
             lines.append("### Numeric Summary")
             desc = numeric_df.describe().T
@@ -469,8 +474,13 @@ def write_feature_engineering_plots(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    identifier_cols = {"egoid", "EgoID", "SurveyNr"}
+
     def plot_numeric_distributions(title: str, df: pd.DataFrame) -> None:
-        numeric_df = df.select_dtypes(include=[np.number])
+        numeric_df = df.select_dtypes(include=[np.number]).drop(
+            columns=[c for c in df.columns if c in identifier_cols],
+            errors="ignore",
+        )
         if numeric_df.empty:
             return
         columns = list(numeric_df.columns)[:20]
@@ -489,7 +499,10 @@ def write_feature_engineering_plots(
         plt.close(fig)
 
     def plot_correlation_heatmap(title: str, df: pd.DataFrame) -> None:
-        numeric_df = df.select_dtypes(include=[np.number])
+        numeric_df = df.select_dtypes(include=[np.number]).drop(
+            columns=[c for c in df.columns if c in identifier_cols],
+            errors="ignore",
+        )
         if numeric_df.shape[1] < 2:
             return
         corr = numeric_df.corr()
@@ -501,7 +514,10 @@ def write_feature_engineering_plots(
         plt.close(fig)
 
     def plot_outlier_boxplots(title: str, df: pd.DataFrame) -> None:
-        numeric_df = df.select_dtypes(include=[np.number])
+        numeric_df = df.select_dtypes(include=[np.number]).drop(
+            columns=[c for c in df.columns if c in identifier_cols],
+            errors="ignore",
+        )
         if numeric_df.empty:
             return
         columns = list(numeric_df.columns)[:20]
